@@ -22,24 +22,33 @@
   
     void networkDef()
     {
-      s_neuron netX[][]=new s_neuron[4][];
+      s_neuron netX[][]=new s_neuron[5][];
       
       int lc=0;
       netX[lc]=new s_neuron[1];
       netX[lc][0] = new s_neuron(actFun_tanh);
       
+      
+      lc++;
+      netX[lc]=new s_neuron[1];
+      for(int i=0;i<netX[lc].length;i++)
+      {
+        netX[lc][i] = new s_neuron_rec(1,actFun_tanh);
+      }
+      
+      
       lc++;
       netX[lc]=new s_neuron[5];
       for(int i=0;i<netX[lc].length;i++)
       {
-        netX[lc][i] = new s_neuron_rec(1,actFun_LeakyReLU);
+        netX[lc][i] = new s_neuron(1,actFun_tanh);
       }
       
       lc++;
       netX[lc]=new s_neuron[5];
       for(int i=0;i<netX[lc].length;i++)
       {
-        netX[lc][i] = new s_neuron_rec(1,actFun_LeakyReLU);
+        netX[lc][i] = new s_neuron(1,actFun_tanh);
       }
 
       
@@ -131,8 +140,8 @@
     float training(int timeback,float lRate)
     {
       CCCX++;
-      nn.PreTrainProcess(lRate/2);
-      nn.BPTT(InX,ExpY,DesY,InoutIdx,timeback,lRate,false);
+      //nn.PreTrainProcess(lRate/2);
+      nn.BPTT(InX,ExpY,DesY,InoutIdx,timeback,lRate);
       nn.Update_dW(lRate);
       
       return  0;
@@ -172,7 +181,7 @@
     int SKIPC=0;
     float lRate=0.5;
     int spikePos=2;
-    int seqL=10;
+    int seqL=15;
     void update()
     {
       //if(SKIPC++%2!=0)return;
@@ -220,8 +229,8 @@
         rec.UpdateNeuronInput();
         rec.SetOuY(OuY);
         TarHist.DataPush(OuY[0]*50);
-        OutHist.DataPush(rec.ou_Y*50);
-        InHist.DataPush(rec.in_X*50);
+        OutHist.DataPush(rec.nn.hidden[1][0].W[0]*20);
+        InHist.DataPush(rec.nn.hidden[1][0].SumVar*50);
         
         //for(int j=0;j<MEMHist.length;j++)
           //MEMHist[j].DataPush(rec.inout_mem[j]*10);
@@ -236,7 +245,7 @@
       InHist.Draw(0,500,width,100);
       
       stroke(255,255,255);
-      ADssHist.Draw(rec.nn.hidden[0][1].ADss[2]*10,0,700,width,100);
+      ADssHist.Draw(rec.nn.hidden[1][0].ADss[0]*10,0,700,width,100);
       // println(rec.nn.hidden[0][1].ADss[2]);
       stroke(255,0,0);
       //for(int i=0;i<MEMHist.length;i++)

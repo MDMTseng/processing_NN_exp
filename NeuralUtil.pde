@@ -150,6 +150,18 @@ class s_neuron{
     }
   }
   
+  /*void Update_dW(float learningRate)//GD
+  {
+    for(int i=0;i<GetActual_pre_neuron_L();i++)
+    {
+      if(dW[i]>1)dW[i]=1;
+      if(dW[i]<-1)dW[i]=-1;
+      W[i]+=dW[i]*learningRate*0.1;
+      dW[i]=0;
+    }
+  }*/
+  
+  
   void add_pre_neuron(s_neuron pre_neuron,float weight)
   {
     if(pre_neuron_list.length<(pre_neuron_L+1))
@@ -251,30 +263,24 @@ class s_neuron{
     post_neuron_list[post_neuron_L]=post_neuron;//append
     post_neuron_L++;
   }
-  void train(boolean crossEn)
+  void train()
   {
 
-    //     Y=XW 
-    // X -W--> |Sig| ->Z
-    //                 expect output d  
-    //                 P=-0.5*(d-Z)^2
+    // X -W-->Y -> ActF ->Z
+    //                     
+    //L(Z,Z_ref)
+    //trainError = L'(Z,Z_ref) OR previous stage error propagate
     //
-    //dP/dW = dP/dZ* dZ/dY*dY/dW
-    //
-    //dP/dZ = d-Z
-    //dZ/dY = Sigmoid(Y)'
-    //dY/dW = X
+    //dW = W* ActF'(Y) * trainError
+    //dX = X* ActF'(Y) * trainError
     
-    float dPdZ = trainError;
+    //float dZdY = crossEn?1:(float)actFun.derivativeOnOutput(this,latestVar);
+    float dPdY = trainError*(float)actFun.derivativeOnOutput(this,latestVar);
     trainError=0;
-    float dZdY = crossEn?1:(float)actFun.derivativeOnOutput(this,latestVar);
-    float dPdY = dPdZ*dZdY;
     for (int j=0;j<pre_neuron_L;j++)
     {
-      float dYdW = pre_neuron_list[j].latestVar;
-      float dX=dPdY*dYdW;
-      pre_neuron_list[j].trainError+=dPdY*(W[j]);
-      dW[j]+=dX;
+      pre_neuron_list[j].trainError+=W[j]*dPdY;
+      dW[j]+=pre_neuron_list[j].latestVar*dPdY;
     }
   }
   
@@ -312,24 +318,21 @@ class s_neuron_rec extends s_neuron{
     this(0,actFun);
   }
    
-  void train(boolean crossEn)
+  void train()
   {
 
-    //     Y=XW 
-    // X -W--> |Sig| ->Z
-    //                 expect output d  
-    //                 P=-0.5*(d-Z)^2
+    // X -W-->Y -> ActF ->Z
+    //                     
+    //L(Z,Z_ref)
+    //trainError = L'(Z,Z_ref) OR previous stage propagate
     //
-    //dP/dW = dP/dZ* dZ/dY*dY/dW
-    //
-    //dP/dZ = d-Z
-    //dZ/dY = Sigmoid(Y)'
-    //dY/dW = X
+    //dW = W* ActF'(Y) * trainError
+    //dX = X* ActF'(Y) * trainError
+
     
-    float dPdZ = trainError;
+    
+    float dPdY = trainError*(float)actFun.derivativeOnOutput(this,latestVar);
     trainError=0;
-    float dZdY = crossEn?1:(float)actFun.derivativeOnOutput(this,latestVar);
-    float dPdY = dPdZ*dZdY;
     if(res_hist_idx>0)
     {
       res_hist_idx--;
@@ -339,16 +342,11 @@ class s_neuron_rec extends s_neuron{
     {
       latestVar=0;
     }
-    //print(">>"+latestVar);
     for (int j=0;j<pre_neuron_L;j++)
     {
-      float dYdW = pre_neuron_list[j].latestVar;
-    //print(","+dYdW);
-      float dX=dPdY*dYdW;
-      pre_neuron_list[j].trainError+=dPdY*(W[j]);
-      dW[j]+=dX;
+      pre_neuron_list[j].trainError+=W[j]*dPdY;
+      dW[j]+=pre_neuron_list[j].latestVar*dPdY;
     }
-    //println();
   }
   
   void aggregateValue()
@@ -718,10 +716,10 @@ class s_neuron_net{
   }
 
   //BufferL = Train_1(this.ns.get(i),Error,ErrorL,Buffer);
-  void Train_Layer(s_neuron layer[],boolean crossEn)
+  void Train_Layer(s_neuron layer[])
   {
     for (int i=0;i<layer.length;i++) {
-      layer[i].train( crossEn);
+      layer[i].train();
     }
     return;
   }
@@ -757,14 +755,14 @@ class s_neuron_net{
     }
   }
   
-  void Train_S(float lRate,boolean crossEn,boolean update_dW)
+  void Train_S(float lRate,boolean update_dW)
   {
     // softMax();
     
     
     for (int i=this.ns.size()-1;i!=0;i--)
     {
-      Train_Layer(this.ns.get(i),crossEn&&(i==this.ns.size()-1));
+      Train_Layer(this.ns.get(i));
     }
     if(update_dW)
       Update_dW(lRate);
@@ -823,10 +821,10 @@ class s_neuron_net{
   
   float TestTrain(float InXSet[][],float OuYSet[][],int iter,float lRate)
   {
-    return TestTrain( InXSet, OuYSet, iter, lRate, false,true);
+    return TestTrain( InXSet, OuYSet, iter, lRate,true);
   }
   
-  float TestTrain(float InXSet[][],float OuYSet[][],int iter,float lRate,boolean crossEn,boolean update_dW)
+  float TestTrain(float InXSet[][],float OuYSet[][],int iter,float lRate,boolean update_dW)
   {
     float aveErr=0;
     float aveErrC=0;
@@ -837,7 +835,7 @@ class s_neuron_net{
       PreTrainProcess(lRate/5);
       for(int j=0;j<InXSet.length;j++)
       {
-        aveErr+=TestTrain( InXSet[j], OuYSet[j], lRate, crossEn,update_dW);
+        aveErr+=TestTrain( InXSet[j], OuYSet[j], lRate,update_dW);
         aveErrC++;
         
       }
@@ -847,7 +845,7 @@ class s_neuron_net{
   
   
   
-  float TestTrain(float InXSet[][],float OuYSet[][],int headIdx,int histL,float lRate,boolean crossEn,boolean update_dW)
+  float TestTrain(float InXSet[][],float OuYSet[][],int headIdx,int histL,float lRate,boolean update_dW)
   {
     float aveErr=0;
     float aveErrC=0;
@@ -857,7 +855,7 @@ class s_neuron_net{
     for(int j=0;j<histL;j++)
     {
       PreTrainProcess(lRate);
-      aveErr+=TestTrain( InXSet[headIdx], OuYSet[headIdx], lRate, crossEn,update_dW);
+      aveErr+=TestTrain( InXSet[headIdx], OuYSet[headIdx], lRate,update_dW);
       aveErrC++;
       
       headIdx--;
@@ -866,7 +864,7 @@ class s_neuron_net{
     }
     return aveErr/aveErrC;
   }
-  float TestTrain(float InX[],float OuY[],float lRate,boolean crossEn,boolean update_dW)
+  float TestTrain(float InX[],float OuY[],float lRate,boolean update_dW)
   {
     //if(InX[idx]==Float.NEGATIVE_INFINITY)continue;
     
@@ -886,22 +884,22 @@ class s_neuron_net{
     }
     
     
-    return TrainErr(lRate,crossEn,update_dW);
+    return TrainErr(lRate,update_dW);
     
   }
   
-  float TrainErr(float lRate,boolean crossEn,boolean update_dW)//To use this you need to set trainError at output layer
+  float TrainErr(float lRate,boolean update_dW)//To use this you need to set trainError at output layer
   {
     one_offset.trainError = 0;
     
     //print("\n");
     float ErrorPow=-calcError();
-    Train_S(lRate,crossEn,update_dW);
+    Train_S(lRate,update_dW);
     
     return ErrorPow;
   }
   
-  void BPTT(float InX[][],float ExpY[][], float DesY[][],int endIdx,int seqL,float lRate,boolean crossEn)
+  void BPTT(float InX[][],float ExpY[][], float DesY[][],int endIdx,int seqL,float lRate)
     {
 
       int curIdx=endIdx;
@@ -935,14 +933,14 @@ class s_neuron_net{
             layer[m].trainError = 0;
           }
         }
-        Train_S(lRate,crossEn,false);
+        Train_S(lRate,false);
       }
       //  Update_dW(lRate);
       //println();
     }
     
     
-    void BPTT2(float InX[][],float ExpY[][], float DesY[][],int endIdx,int seqL,float lRate,boolean crossEn)
+    void BPTT2(float InX[][],float ExpY[][], float DesY[][],int endIdx,int seqL,float lRate)
     {
 
       int curIdx=endIdx;
@@ -980,18 +978,18 @@ class s_neuron_net{
             layer[m].trainError = 0;
           }
         }
-        Train_S(lRate,crossEn,false);
+        Train_S(lRate,false);
       }
       //  Update_dW(lRate);
       //println();
     }
   
-    void TestTrainRecNNx_(float InX[][],float OuY[][],int endIdx,int seqL,float lRate,boolean crossEn,int memNum)
+    void TestTrainRecNNx_(float InX[][],float OuY[][],int endIdx,int seqL,float lRate,int memNum)
     {
       //if(InX[idx]==Float.NEGATIVE_INFINITY)continue;
       
       
-      TestTrain(InX[endIdx],OuY[endIdx],lRate,crossEn,false);
+      TestTrain(InX[endIdx],OuY[endIdx],lRate,false);
       
       //float ErrorPow=-calcError();
 
@@ -1074,7 +1072,7 @@ class s_neuron_net{
             layer[m].trainError = 0;
           }
         }
-        Train_S(lRate,crossEn,false);
+        Train_S(lRate,false);
       
         
       }
@@ -1250,7 +1248,7 @@ class RLearningCore
     try{
       actExplain(R_nx, ed);
       float R_x[]=R_nx;
-      nn.TestTrain(ed.S_tate,R_x,lRate,false,dW_update);
+      nn.TestTrain(ed.S_tate,R_x,lRate,dW_update);
     }
     catch (Exception e) 
     {
@@ -1287,7 +1285,7 @@ class RLearningCore
       {
           nn.output[k].trainError=R_err[k];
       }
-      nn.TrainErr(lRate,false,dW_update);
+      nn.TrainErr(lRate,dW_update);
     }
     catch (Exception e) 
     {
