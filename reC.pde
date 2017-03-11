@@ -22,21 +22,21 @@
   
     void networkDef()
     {
-      s_neuron netX[][]=new s_neuron[5][];
+      s_neuron netX[][]=new s_neuron[3][];
       
       int lc=0;
       netX[lc]=new s_neuron[1];
-      netX[lc][0] = new s_neuron(actFun_tanh);
-      
+      netX[lc][0] = new s_neuron(actFun_sigmoid);
+
       
       lc++;
-      netX[lc]=new s_neuron[1];
+      netX[lc]=new s_neuron[3];
       for(int i=0;i<netX[lc].length;i++)
       {
         netX[lc][i] = new s_neuron_rec(1,actFun_tanh);
       }
       
-      
+      /*
       lc++;
       netX[lc]=new s_neuron[5];
       for(int i=0;i<netX[lc].length;i++)
@@ -49,7 +49,7 @@
       for(int i=0;i<netX[lc].length;i++)
       {
         netX[lc][i] = new s_neuron(1,actFun_tanh);
-      }
+      }*/
 
       
       lc++;
@@ -175,6 +175,10 @@
     HistDataDraw InHist=new HistDataDraw(100);
     HistDataDraw ADssHist=new HistDataDraw(100);
     
+    HistDataDraw P1Hist=new HistDataDraw(100);
+    HistDataDraw P2Hist=new HistDataDraw(100);
+    
+    
     boolean trainStop=false;
     float t=1;
     
@@ -184,6 +188,7 @@
     int seqL=15;
     void update()
     {
+      if(trainStop)return;
       //if(SKIPC++%2!=0)return;
       strokeWeight(3);
       background(0);
@@ -224,28 +229,42 @@
           t=0;
         }
         else outX/=1.1;
-        OuY[0]=outX<1.9&&outX>0.6?1:0;//cos(10*t)*outX;
+        OuY[0]=outX>0.7?1:0;//cos(10*t)*outX;
         //OuY[0]=i>=(spikePos)&&i<=(spikePos+4)?1:-1;
+        
+        
+        
+        P1Hist.DataPush(rec.nn.output[0].W[0]*20);
+        P2Hist.DataPush(rec.nn.output[0].SumVar*20);
         rec.UpdateNeuronInput();
         rec.SetOuY(OuY);
         TarHist.DataPush(OuY[0]*50);
-        OutHist.DataPush(rec.nn.hidden[1][0].W[0]*20);
-        InHist.DataPush(rec.nn.hidden[1][0].SumVar*50);
+        OutHist.DataPush(rec.ou_Y*50);
+        InHist.DataPush(rec.in_X*50);
+        
         
         //for(int j=0;j<MEMHist.length;j++)
           //MEMHist[j].DataPush(rec.inout_mem[j]*10);
       }
-      
+      rec.nn.output[0].SumVar=0;
+      rec.nn.output[0].W[2]=0;
       stroke(0,255,0);
       TarHist.Draw(0,600,width,100);
       
-      stroke(255,255,0);
+      stroke(255,0,0);
       OutHist.Draw(0,600,width,100);
       stroke(255,255,0);
       InHist.Draw(0,500,width,100);
       
+      
+      stroke(255,0,255);
+      P1Hist.Draw(0,400,width,100);
       stroke(255,255,255);
-      ADssHist.Draw(rec.nn.hidden[1][0].ADss[0]*10,0,700,width,100);
+      P2Hist.Draw(0,400,width,100);
+      
+      
+      stroke(255,255,255);
+      //ADssHist.Draw(rec.nn.hidden[0][0].ADss[0]*10,0,700,width,100);
       // println(rec.nn.hidden[0][1].ADss[2]);
       stroke(255,0,0);
       //for(int i=0;i<MEMHist.length;i++)

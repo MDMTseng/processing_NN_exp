@@ -310,7 +310,7 @@ class s_neuron_rec extends s_neuron{
   s_neuron_rec(int defaultNum,s_neuron_actFunc actFun)
   {
     super(defaultNum,actFun);
-    add_pre_neuron(this,0.7);
+    add_pre_neuron(this,0.1);
     reset_state();
   }
   s_neuron_rec(s_neuron_actFunc actFun)
@@ -935,6 +935,18 @@ class s_neuron_net{
         }
         Train_S(lRate,false);
       }
+      
+      
+      for (int k=this.ns.size()-2;k>=0;k--)
+      {
+        s_neuron layer[]=this.ns.get(k);
+        for (int m=0;m<layer.length;m++)
+        {
+          layer[m].trainError = 0;
+          layer[m].reset_state();
+        }
+      }
+      
       //  Update_dW(lRate);
       //println();
     }
