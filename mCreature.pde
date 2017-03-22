@@ -35,33 +35,30 @@ class mFixture{
 }
 
 
+  class ConsciousCenter
+  {
+    float in_energy;
+    float in_exhustedLevel;
+    float in_currentSpeed;
+    float in_peerInfo;
+    float in_eyesBeam[]=new float[5];
     
-    RLearningCore QL=new RLearningCore(1000, 9, 4){
-     void actExplain(float q_nx[],ExpData ed)
-      {
-        //r(s,a)+garmma*max_a'_(Q_nx) => Q_nx
-        //if(ed.R_eward!=0)print(ed.R_eward);
-        float garmma=0.98;
-        
-        int selIdx=(ed.A_ct[0]>ed.A_ct[1])?0:1;
-        float maxQ_next_act=(q_nx[0]>q_nx[1])?q_nx[0]:q_nx[1];
-        q_nx[selIdx]=(ed.R_eward+(garmma)*maxQ_next_act);
-        q_nx[1-selIdx]=Float.NaN;  
-          
-        
-        selIdx=(ed.A_ct[2]>ed.A_ct[3])?2:3;
-        maxQ_next_act=(q_nx[2]>q_nx[3])?q_nx[2]:q_nx[3];
-        q_nx[selIdx]=(ed.R_eward+(garmma)*maxQ_next_act);
-        q_nx[5-selIdx]=Float.NaN;  
-        
-        for(int i=4;i<q_nx.length;i++)//other don't care
-          q_nx[i]=Float.NaN;  
-          
-      }
-      
-      
-      
-     void actExplainX(float q_err[],float q_cx[],float q_nx[],ExpData ed)
+    float inout_mem[]=new float[0];
+    
+    float ou_turnLeft;
+    float ou_turnRight;
+    float ou_speedUp;
+    float ou_speedDown;
+    
+    s_neuron_net nn = new s_neuron_net(new int[]{4+in_eyesBeam.length+inout_mem.length,20,20,20,4+inout_mem.length+in_eyesBeam.length});
+    int histC=0;
+    float InX[][]=new float[2][nn.input.length];
+    float OuY[][]=new float[InX.length][nn.output.length];
+    float predictStateError=1;
+    
+    
+    RLearningCore QL=new RLearningCore(1000, 9, nn.output.length){
+       void actExplainX(float q_err[],float q_cx[],float q_nx[],ExpData ed)
       {
         //r(s,a)+garmma*max_a'_(Q_nx) => Q_nx
         //if(ed.R_eward!=0)print(ed.R_eward);
@@ -78,32 +75,21 @@ class mFixture{
         q_err[selIdx]=(ed.R_eward+(garmma)*maxQ_next_act)-q_cx[selIdx];
         q_err[5-selIdx]=0;  
         
-        for(int i=4;i<q_nx.length;i++)//other don't care
-          q_err[i]=0;  
+        selIdx = 4+inout_mem.length;
+        /*for(int i=selIdx;i<q_nx.length;i++)//other don't care
+          q_err[i]=0;  */
+        
+        for(int i=0;i<in_eyesBeam.length;i++)
+        {
+          q_err[i+selIdx]=ed.S_tate[i+selIdx]-ed.S_tate_next[i+selIdx];
           
-      }
+          float tmp =q_err[i+selIdx];
+          tmp*=tmp;
+          predictStateError+=0.001*(tmp-predictStateError);
+        }
+          
+      };
     };
-
-  class ConsciousCenter
-  {
-    float in_energy;
-    float in_exhustedLevel;
-    float in_currentSpeed;
-    float in_peerInfo;
-    float in_eyesBeam[]=new float[5];
-    
-    float inout_mem[]=new float[0];
-    
-    float ou_turnLeft;
-    float ou_turnRight;
-    float ou_speedUp;
-    float ou_speedDown;
-    
-    s_neuron_net nn = new s_neuron_net(new int[]{4+in_eyesBeam.length+inout_mem.length,20,15,10,4+inout_mem.length});
-    int histC=0;
-    float InX[][]=new float[2][nn.input.length];
-    float OuY[][]=new float[InX.length][nn.output.length];
-    
     
     
     float energy;
@@ -218,12 +204,12 @@ class mFixture{
       float state[]=InX[prevIdx];
       float act[]=OuY[prevIdx];
       float nstate[]=InX[currentIdx];
-      thisExp.ExpLink(state,act,reward,nstate);
+      thisExp.ExpLink(state,act,reward,nstate,null);
       
       if(reward!=0||random(0,1)>0.98)
       {
         println(reward);
-        QL.pushExp(state,act,reward,nstate);
+        QL.pushExp(state,act,reward,nstate,null);
       
         for(int i=0;i<20;i++)
         {

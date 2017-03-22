@@ -704,7 +704,7 @@ class s_neuron_net{
       SupressL1X(layer,rate*0.001);
     }
     
-    /*for (int i=this.ns.size()-1;i!=0;i--)
+    for (int i=this.ns.size()-1;i!=0;i--)
     {
       s_neuron layer[]=this.ns.get(i);
       //AttractSimNode(layer,0.70,0.80);
@@ -712,7 +712,7 @@ class s_neuron_net{
       TrimSimNode(layer,0.99);
       //NeuronNodePolarizing(this.ns.get(i),0.9);
       NeuronNodeRevive(layer,0.8,1+rate/50);
-    }*/
+    }
   }
 
   //BufferL = Train_1(this.ns.get(i),Error,ErrorL,Buffer);
@@ -1175,22 +1175,32 @@ class ExpData
   float A_ct[];//output act decision
   float R_eward;
   float S_tate_next[];//next input after current act
+  float extraData[];//next input after current act
   
   ExpData(int stateDim,int actDim)
+  {
+    this(stateDim,actDim,0);
+  }
+  ExpData(int stateDim,int actDim,int extraDataDim)
   {
     S_tate=new float[stateDim];
     S_tate_next=new float[stateDim];
     A_ct=new float[actDim];
+    extraData=new float[extraDataDim];
   }
   
   
+  ExpData(float S_tate[],float A_ct[],float R_eward,float S_tate_next[],float extraData[])
+  {
+    ExpLink(S_tate,A_ct,R_eward,S_tate_next,extraData);
+  }
   ExpData(float S_tate[],float A_ct[],float R_eward,float S_tate_next[])
   {
-    ExpLink(S_tate,A_ct,R_eward,S_tate_next);
+    ExpLink(S_tate,A_ct,R_eward,S_tate_next,null);
   }
   
   
-  void ExpAssign(float S_tate[],float A_ct[],float R_eward,float S_tate_next[])
+  void ExpAssign(float S_tate[],float A_ct[],float R_eward,float S_tate_next[],float extraData[])
   {
     this.R_eward=R_eward;
     for(int i=0;i<S_tate.length;i++)
@@ -1205,13 +1215,23 @@ class ExpData
     {
       this.A_ct[i]=A_ct[i];
     }
+    
+    if(extraData!=null)
+    for(int i=0;i<extraData.length;i++)
+    {
+      this.extraData[i]=extraData[i];
+    }
   }
-  void ExpLink(float S_tate[],float A_ct[],float R_eward,float S_tate_next[])
+  void ExpLink(float S_tate[],float A_ct[],float R_eward,float S_tate_next[],float extraData[])
   {
     this.S_tate=S_tate;
     this.A_ct=A_ct;
     this.R_eward=R_eward;
     this.S_tate_next=S_tate_next;
+    if(extraData==null)
+      this.extraData=new float[0];
+    else
+      this.extraData=extraData;
   }
 }
 class RLearningCore
@@ -1229,9 +1249,9 @@ class RLearningCore
     expSetAvalibleL=0;
   }
   
-  void pushExp(float S_tate[],float A_ct[],float R_eward,float S_tate_next[])//for terminal state set S_tate_next to null
+  void pushExp(float S_tate[],float A_ct[],float R_eward,float S_tate_next[],float extraData[])//for terminal state set S_tate_next to null
   {
-    expReplaySet[expWIdx].ExpAssign(S_tate,A_ct,R_eward,S_tate_next);
+    expReplaySet[expWIdx].ExpAssign(S_tate,A_ct,R_eward,S_tate_next,extraData);
     if(++expWIdx>=expReplaySet.length)expWIdx=0;
     if(expSetAvalibleL<expReplaySet.length)expSetAvalibleL++;
   }

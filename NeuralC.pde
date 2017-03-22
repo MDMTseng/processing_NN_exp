@@ -1,7 +1,7 @@
 class NeuralC{
 
   mFixtureEnv env=new mFixtureEnv(860,500);
-  mCreature cres[] = new mCreature[25];
+  mCreature cres[] = new mCreature[15];
   ConsciousCenter ccset[] = new ConsciousCenter[cres.length];
   
   
@@ -67,15 +67,32 @@ class NeuralC{
     
     int NNN=4;
     int Y=250;
-    for(int i=0;i<NNN;i++)
-    {
-      
-      stroke(i*255/NNN,255-i*255/NNN,(180+i*255/NNN)%255);
-      memHist[i].Draw(cres[0].CC.nn.output[i].latestVar*50,width/2,Y,width/2,300);
-      Y+=50;
-    }
+    int i=0;
+    
+    stroke(i*255/NNN,255-i*255/NNN,(180+i*255/NNN)%255);
+    memHist[i].Draw(cres[0].CC.nn.output[i].latestVar*50,width/2,Y,width/2,300);
+    Y+=50;
+    
+    i++;
+    stroke(i*255/NNN,255-i*255/NNN,(180+i*255/NNN)%255);
+    memHist[i].Draw((cres[0].CC.nn.output[i].latestVar-cres[0].CC.nn.output[i-1].latestVar)*50,width/2,Y,width/2,300);
+    Y+=50;
+    
+    i++;
+    stroke(i*255/NNN,255-i*255/NNN,(180+i*255/NNN)%255);
+    memHist[i].Draw(cres[0].CC.nn.output[i].latestVar*50,width/2,Y,width/2,300);
+    Y+=50;
+    
+    i++;
+    stroke(i*255/NNN,255-i*255/NNN,(180+i*255/NNN)%255);
+    memHist[i].Draw((cres[0].CC.nn.output[i].latestVar-cres[0].CC.nn.output[i-1].latestVar)*50,width/2,Y,width/2,300);
+    Y+=50;
+    
+    
+    
+    
     stroke(255,255,255);
-    inHist[0].Draw(cres[0].CC.in_peerInfo*50,width/2,Y,width/2,300);
+    inHist[0].Draw(cres[0].CC.predictStateError*5000,width/2,Y,width/2,300);
       Y+=50;
     stroke(255,0,0);
     //inHist[1].Draw(cres[0].CC.ou_expectReward*50,width/2,Y,width/2,300);
