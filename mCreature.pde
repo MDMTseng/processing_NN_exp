@@ -50,7 +50,7 @@ class mFixture{
     float ou_speedUp;
     float ou_speedDown;
     
-    s_neuron_net nn = new s_neuron_net(new int[]{4+in_eyesBeam.length+inout_mem.length,20,20,20,4+inout_mem.length+in_eyesBeam.length});
+    s_neuron_net nn = new s_neuron_net(new int[]{4+in_eyesBeam.length+inout_mem.length,10,20,15,4+in_eyesBeam.length+inout_mem.length});
     int histC=0;
     float InX[][]=new float[2][nn.input.length];
     float OuY[][]=new float[InX.length][nn.output.length];
@@ -60,7 +60,7 @@ class mFixture{
     RLearningCore QL=new RLearningCore(1000, 9, nn.output.length){
        void actExplainX(float q_err[],float q_cx[],float q_nx[],ExpData ed)
       {
-        //r(s,a)+garmma*max_a'_(Q_nx) => Q_nx
+        //r(s,a)+garmma*max_a'_(Q_nx) => Q_cx
         //if(ed.R_eward!=0)print(ed.R_eward);
         float garmma=0.98;
         
@@ -75,17 +75,20 @@ class mFixture{
         q_err[selIdx]=(ed.R_eward+(garmma)*maxQ_next_act)-q_cx[selIdx];
         q_err[5-selIdx]=0;  
         
-        selIdx = 4+inout_mem.length;
+        selIdx = 4;
         /*for(int i=selIdx;i<q_nx.length;i++)//other don't care
           q_err[i]=0;  */
         
         for(int i=0;i<in_eyesBeam.length;i++)
         {
-          q_err[i+selIdx]=ed.S_tate[i+selIdx]-ed.S_tate_next[i+selIdx];
+          //Predict next state
+          //error = next state - current predict
+          q_err[4+i]=ed.S_tate_next[i+selIdx]-q_cx[4+i];
           
           float tmp =q_err[i+selIdx];
           tmp*=tmp;
-          predictStateError+=0.001*(tmp-predictStateError);
+          predictStateError+=0.01*(tmp-predictStateError);
+          //q_err[i+selIdx]=0;
         }
           
       };
