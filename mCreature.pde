@@ -49,8 +49,9 @@ class mFixture{
     float ou_turnRight;
     float ou_speedUp;
     float ou_speedDown;
+    float ou_pred_eyesBeam[]=new float[in_eyesBeam.length];
     
-    s_neuron_net nn = new s_neuron_net(new int[]{4+in_eyesBeam.length+inout_mem.length,10,20,15,4+in_eyesBeam.length+inout_mem.length});
+    s_neuron_net nn = new s_neuron_net(new int[]{4+in_eyesBeam.length+inout_mem.length,10,2,8,4+in_eyesBeam.length+inout_mem.length});
     int histC=0;
     float InX[][]=new float[2][nn.input.length];
     float OuY[][]=new float[InX.length][nn.output.length];
@@ -85,8 +86,8 @@ class mFixture{
           //error = next state - current predict
           q_err[4+i]=ed.S_tate_next[i+selIdx]-q_cx[4+i];
           
-          float tmp =q_err[i+selIdx];
-          tmp*=tmp;
+          float tmp =q_err[i+selIdx]*500;
+          if(tmp<0)tmp=-tmp;
           predictStateError+=0.01*(tmp-predictStateError);
           //q_err[i+selIdx]=0;
         }
@@ -188,6 +189,13 @@ class mFixture{
       ou_turnRight=OuY[InoutIdx][i++];
       ou_speedUp=OuY[InoutIdx][i++];
       ou_speedDown=OuY[InoutIdx][i++];
+      
+      
+      
+      for(int j=0;j<ou_pred_eyesBeam.length;j++)
+      {
+        ou_pred_eyesBeam[j]=OuY[InoutIdx][i++];
+      }
       
       
       for(int j=0;j<inout_mem.length;j++)
@@ -361,8 +369,8 @@ class mCreature extends mFixture{
       float distret=env.testBeamCollide(pos,speedAngle+eye_spreadAngle*PI/180*i,ret_intersect, retCollide);
       if(minDist>distret)minDist=distret;
       if(maxDist<distret)maxDist=distret;
-      if(distret>150)distret=150;
-      CC.in_eyesBeam[i]=distret/150;
+      if(distret>300)distret=300;
+      CC.in_eyesBeam[i]=distret/500;
       if(retCollide[0] instanceof mCreature)
       {
         mCreature collideCre = (mCreature)retCollide[0];
@@ -445,7 +453,7 @@ class mCreature extends mFixture{
   void draw(float offsetX,float offsetY)
   {
     
-    stroke(c,50);
+    stroke(c,100);
     fill(c,50);
     
     PVector ret_intersect=new PVector();
@@ -456,9 +464,25 @@ class mCreature extends mFixture{
     {
       
       env.testBeamCollide(pos,speedAngle+eye_spreadAngle*PI/180*i,ret_intersect, retCollide);
-      ellipse(ret_intersect.x+env.frameW/2,-ret_intersect.y+env.frameH/2, 15, 15);
+      //ellipse(ret_intersect.x+env.frameW/2,-ret_intersect.y+env.frameH/2, 15, 15);
       line(ret_intersect.x+env.frameW/2,-ret_intersect.y+env.frameH/2,pos.x+env.frameW/2,-pos.y+env.frameH/2);
 
+    }
+    
+
+    for(int i=0;i<CC.in_eyesBeam.length;i++)
+    {
+      
+      float ang=speedAngle+eye_spreadAngle*PI/180*i;
+      float predictDist=CC.in_eyesBeam[i]*500;
+      stroke(c,50);
+      ellipse(predictDist*cos(ang)+pos.x+env.frameW/2,-predictDist*sin(ang)-pos.y+env.frameH/2, 15, 15);
+      
+      
+      predictDist=CC.ou_pred_eyesBeam[i]*500;
+      
+      stroke(c,255);
+      ellipse(predictDist*cos(ang)+pos.x+env.frameW/2,-predictDist*sin(ang)-pos.y+env.frameH/2, 15, 15);
     }
     
     fill(c);
@@ -611,11 +635,11 @@ class mCreatureEv extends mCreature implements Comparable<mCreatureEv>{
         
         //collideCre.CC.in_energy+=0.001/distret;
         CC.in_energy+=0.01/distret/CC.in_eyesBeam.length;
-        CC.in_eyesBeam[i]=-100/distret;
+        CC.in_eyesBeam[i]=distret/1000;
       }
       else
       {
-         CC.in_eyesBeam[i]=-100/distret;
+         CC.in_eyesBeam[i]=distret/1000;
       }
 
     

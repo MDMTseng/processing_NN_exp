@@ -92,7 +92,7 @@ class NeuralC{
     
     
     stroke(255,255,255);
-    inHist[0].Draw(cres[0].CC.predictStateError*5000,width/2,Y,width/2,300);
+    inHist[0].Draw(cres[0].CC.predictStateError,width/2,Y,width/2,300);
       Y+=50;
     stroke(255,0,0);
     //inHist[1].Draw(cres[0].CC.ou_expectReward*50,width/2,Y,width/2,300);
