@@ -1,16 +1,17 @@
-float InArr[][]=new float[100][2];//x,y=2
+float InArr[][]=new float[10][2];//x,y=2
 float OuArr[][]=new float[InArr.length][2];//output class1,2
 float error[][]=new float[InArr.length][2];//output class1,2
 
 NeuralUtil nu=new NeuralUtil();
-neuroLayer L1 = new neuroLayer(nu,InArr.length,InArr[0].length,OuArr[0].length);
+neuroNet N1 = new neuroNet(InArr.length,new int[]{2,3,2});
 void setup() {
   size(640, 360);
   for (int i=0; i<InArr.length; i++) {
     float offset = (i%2==0)? 1:-1;
-    offset*=0.9;
-    InArr[i][0]=offset+random(-1, 1);//x
-    InArr[i][1]=random(-1, 1);//y
+    offset*=1;
+    float t=i*1.0/InArr.length;
+    InArr[i][0]=offset+sin(t*5);//x
+    InArr[i][1]=2*(t-0.5);//y
     OuArr[i][(i%2==0)?1:0]=1;//class 2
   }
   frameRate(30);
@@ -19,19 +20,21 @@ void setup() {
 void draw(){
   background(0);
   
-  scanPlain();
+  //scanPlain();
+  
   //Run
-  L1.ForwardPass(InArr);
+  N1.ForwardPass(InArr);
   
   
   
-  drawX(InArr,OuArr,L1.pred_Y);
+  drawX(InArr,OuArr,N1.pred_Y);
   //Train
-  nu.matAdd(error,OuArr,L1.pred_Y,-1);
-  L1.backProp(null,error);
-  L1.updateW(0.01);
-  L1.reset_deltaW();
+  nu.matAdd(error,OuArr,N1.pred_Y,-1);
+  N1.backProp(null,error);
+  N1.updateW(1);
+  N1.reset_deltaW();
   //
+  
 }
  
 void drawX(float in[][],float out[][],float pred[][]) {
@@ -51,15 +54,15 @@ void drawX(float in[][],float out[][],float pred[][]) {
     
     noFill();
     if (pred[i][0]>pred[i][1])
-      stroke(255, 100, 100);
+      stroke(255, 100, 150);
     else
-      stroke(100, 255, 100);
+      stroke(100, 255, 150);
     ellipse(width/2+in[i][0]*mult, height/2+in[i][1]*mult, 10, 10);
   }
 }
 
 void drawScanPlain(float in[][],float pred[][]) {
-  float mult=100;
+  float mult=0.1;
   for (int i=0; i<in.length; i++) {
     
     noFill();
@@ -73,12 +76,13 @@ void drawScanPlain(float in[][],float pred[][]) {
 float scan1[][]=new float[InArr.length][InArr[0].length];
 void scanPlain()
 {
+  float scale =1000;
   float x=-1,y=-1;
   while(true)
   {
     for (int i=0; i<scan1.length; i++) {
-      scan1[i][0]=x;//x
-      scan1[i][1]=y;//y
+      scan1[i][0]=x*scale;//x
+      scan1[i][1]=y*scale;//y
       x+=0.1;
       if(x>1)
       {
@@ -87,15 +91,76 @@ void scanPlain()
       }
     }
       
-    L1.ForwardPass(scan1);
-    drawScanPlain(scan1,L1.pred_Y);
+    N1.ForwardPass(scan1);
+    drawScanPlain(scan1,N1.pred_Y);
     
     if(y>1)break;
     
   }
 }
 
-
+class neuroNet{
+  
+  neuroLayer layers[];
+  NeuralUtil nu=new NeuralUtil();
+  float pred_Y[][];
+  neuroNet(int batchSize,int netDim[])
+  {
+    layers=new neuroLayer[netDim.length-1];
+    layers[0] = new neuroLayer(nu,batchSize,netDim[0],netDim[1]);
+    
+    for(int i=1;i<layers.length;i++)
+    {
+      layers[i] = new neuroLayer(nu,layers[i-1],netDim[i+1]);
+    }
+    
+  }
+  
+  void ForwardPass(float in[][])
+  {
+    layers[0].ForwardPass(in);
+    for(int i=1;i<layers.length;i++)
+    {
+      layers[i].ForwardPass(layers[i-1].pred_Y);
+    }
+    pred_Y = layers[layers.length-1].pred_Y;
+  }
+  
+  void backProp(float back_gradient[][],float error_gradient[][])
+  {
+    if(layers.length>1)
+    {
+      layers[layers.length-1].backProp(layers[layers.length-2].pred_Y,error_gradient);
+      for(int i=layers.length-2;i!=0;i--)
+      {
+          layers[i].backProp(layers[i-1].pred_Y,layers[i].pred_Y);
+      }
+      layers[0].backProp(back_gradient,layers[0].pred_Y);
+    }
+    else
+      layers[0].backProp(back_gradient,error_gradient);
+  }
+  
+  void reset_deltaW()
+  {
+    for(int i=0;i<layers.length;i++)
+    {
+      layers[i].reset_deltaW();
+      
+    }
+  }
+  
+  void updateW(float learningRate)
+  {
+    //
+    for(int i=0;i<layers.length;i++)
+    {
+        layers[i].updateW(learningRate);
+       
+    }
+  }
+  
+}
 class neuroLayer {
   float InArr[][];
   float pred_preY[][];
@@ -106,6 +171,9 @@ class neuroLayer {
   NeuralUtil nu;
   neuroLayer(NeuralUtil nu,int batchSize,int inDim,int ouDim)
   {
+    
+    println("inDim=="+inDim+" ouDim=="+ouDim);
+    
     this.nu = nu;
     InArr=new float[batchSize][inDim+1];
     pred_preY=new float[batchSize][ouDim];
@@ -121,7 +189,7 @@ class neuroLayer {
   }
   neuroLayer(NeuralUtil nu,neuroLayer preLayer,int layerDim)
   {
-    this(nu,preLayer.InArr.length,preLayer.InArr[0].length-1,layerDim);
+    this(nu,preLayer.InArr.length,preLayer.pred_Y[0].length,layerDim);
   }
   
   void ForwardPass(float in[][])
@@ -144,10 +212,14 @@ class neuroLayer {
   {
     nu.matAdd(W,W,dW,learningRate/pred_Y.length);
   }
-  
+  void backProp(float error_gradient[][])
+  {
+    backProp(null,error_gradient);
+  }
   void backProp(float back_gradient[][],float error_gradient[][])
   {
-    
+    //println("==="+error_gradient[0].length);
+    //println(">>" +this.error_gradient[0].length);
     nu.gradient_actvationF(this.error_gradient,pred_preY);//get sigmoid gradient
     
     
@@ -168,7 +240,7 @@ class NeuralUtil{
     float[][] wRandom=new float[input[0].length][layerSize];
     for (int i = 0; i < wRandom.length; i++) { // aRow
           for (int j = 0; j < wRandom[0].length; j++) { // bColumn
-            wRandom[i][j]=random(-1,1)/10;
+            wRandom[i][j]=random(-1,1)/100;
           }
       }
     return wRandom;
@@ -248,6 +320,7 @@ class NeuralUtil{
         for (int i = 0; i < backg[0].length; i++) {
           for(int j=0;j<W[0].length;j++)
             backg[k][i]+=error_gradient[k][j] * W[i][j];
+            
         }
     }
   }
