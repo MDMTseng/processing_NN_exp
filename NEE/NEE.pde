@@ -3,14 +3,14 @@ float OuArr[][]=new float[InArr.length][1];//output class1,2
 float error[][]=new float[InArr.length][1];//output class1,2
 
 NeuralUtil nu=new NeuralUtil();
-neuroNet N1 = new neuroNet(InArr.length,new int[]{1,132,1});
+neuroNet N1 = new neuroNet(InArr.length,new int[]{1,8,8,8,1});
 void setup() {
   size(640, 360);
   for (int i=0; i<InArr.length; i++) {
     float t=i*1.0/InArr.length;
     InArr[i][0]=t-0.5;
     
-    OuArr[i][0]=0.2*(sin(t*12))>0?0.7:0.2;//class 2
+    OuArr[i][0]=0.2*(sin(t*12))>0?0.9:0.1;//class 2
   }
   frameRate(30);
 }
@@ -31,12 +31,12 @@ void draw(){
     //Train
     nu.matAdd(error,OuArr,N1.pred_Y,-1);
     N1.backProp(null,error);
-    N1.updateW(0.1);
+    N1.updateW(0.01);
     N1.reset_deltaW();
     //
   }
-  //N1.WDecay(0.99);
   
+  //N1.WDecay(0.999);
   draw1X(InArr,OuArr,N1.pred_Y);
   //nu.printMat(N1.pred_Y);
 }
@@ -123,8 +123,8 @@ void scanPlain()
 class neuroNet{
   
   neuroLayer layers[];
-  //NeuralUtil nu=new NeuralUtil_lRelu(0.1);
-  NeuralUtil nu=new NeuralUtil_Tanh();
+  NeuralUtil nu=new NeuralUtil_lRelu(0.01);
+  //NeuralUtil nu=new NeuralUtil_Tanh();
   float pred_Y[][];
   neuroNet(int batchSize,int netDim[])
   {
@@ -135,7 +135,7 @@ class neuroNet{
     {
       layers[i] = new neuroLayer(nu,layers[i-1],netDim[i+1]);
     }
-    
+    //layers[layers.length-1].nu=new NeuralUtil_Sigmoid();
   }
   
   void ForwardPass(float in[][])
@@ -370,45 +370,6 @@ class NeuralUtil{
         }
     }
   }
-  void sigmoid(float[][] out,float[][] in){
-     for (int i = 0; i < in.length; i++) { // aRow
-          for (int j = 0; j < in[0].length; j++) { // bColumn
-            out[i][j]=1/(1+exp(-in[i][j]));
-          }
-      }
-  }
-  
-  void actvationF(float[][] out,float[][] in)
-  {
-     sigmoid(out,in);
-  }
-
-  void gradient_actvationF(float[][] out,float[][] in){
-    
-    sigmoid(out,in);
-    gradient_sigmoid_Y(out,out);
-  }
-
-  void gradient_sigmoid_Y(float[][] out,float[][] in){
-     for (int i = 0; i < in.length; i++) { // aRow
-          for (int j = 0; j < in[0].length; j++) { // bColumn
-            out[i][j]=in[i][j]*(1-in[i][j]);
-          }
-      }
-  }
-
-  public void printMat(float [][]C)
-  {
-      for (int i = 0; i < C.length; i++) { // aRow
-          for (int j = 0; j < C[0].length; j++) { // bColumn
-            print(C[i][j]+",");
-          }
-          println();
-      }
-  }
-}
-
-class NeuralUtil_Linear extends NeuralUtil{
   
   void actvationF(float[][] out,float[][] in)
   {
@@ -426,8 +387,49 @@ class NeuralUtil_Linear extends NeuralUtil{
           }
       }//gradient = 1
   }
+
+  public void printMat(float [][]C)
+  {
+      for (int i = 0; i < C.length; i++) { // aRow
+          for (int j = 0; j < C[0].length; j++) { // bColumn
+            print(C[i][j]+",");
+          }
+          println();
+      }
+  }
 }
-class NeuralUtil_Tanh extends NeuralUtil{
+
+class NeuralUtil_Sigmoid extends NeuralUtil{
+  
+  void sigmoid(float[][] out,float[][] in){
+     for (int i = 0; i < in.length; i++) { // aRow
+          for (int j = 0; j < in[0].length; j++) { // bColumn
+            out[i][j]=1/(1+exp(-in[i][j]));
+          }
+      }
+  }
+  
+  void actvationF(float[][] out,float[][] in)
+  {
+    sigmoid(out,in);
+     
+  }
+
+  void gradient_sigmoid_Y(float[][] out,float[][] in){
+     for (int i = 0; i < in.length; i++) { // aRow
+          for (int j = 0; j < in[0].length; j++) { // bColumn
+            out[i][j]=in[i][j]*(1-in[i][j]);
+          }
+      }
+  }
+  void gradient_actvationF(float[][] out,float[][] in){
+    
+    sigmoid(out,in);
+    gradient_sigmoid_Y(out,out);
+  }
+
+}
+class NeuralUtil_Tanh extends NeuralUtil_Sigmoid{
   
   void actvationF(float[][] out,float[][] in)
   {
