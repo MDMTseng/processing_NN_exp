@@ -45,16 +45,22 @@ class DataFeedDraw{
 class DataFeedDraw2D{
   float PreDataX;
   float PreDataY;
+  boolean isFirst;
   void reset ()
   {
+    isFirst=true;
     PreDataX = 0;
     PreDataY = 0;
     
   }
   void Draw(float newDataX,float newDataY,int x,int y,int w,int h) {
-    line((newDataX)*w+x,(h-PreDataY)+y,
+    if(!isFirst)
+    {
+      line((PreDataX)*w+x,(h-PreDataY)+y,
          (newDataX)*w+x,  (h-newDataY)+y);
+    }
     PreDataX=newDataX;
     PreDataY=newDataY;
+    isFirst=false;
   }
 }

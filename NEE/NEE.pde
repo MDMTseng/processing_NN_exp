@@ -31,12 +31,12 @@ void draw(){
     //Train
     nu.matAdd(error,OuArr,N1.pred_Y,-1);
     N1.backProp(null,error);
-    N1.updateW(0.01);
+    N1.updateW(1);
     N1.reset_deltaW();
     //
   }
   
-  //N1.WDecay(0.999);
+  //N1.WDecay(0.99);
   draw1X(InArr,OuArr,N1.pred_Y);
   //nu.printMat(N1.pred_Y);
 }
@@ -48,14 +48,14 @@ void draw1X(float in[][],float out[][],float pred[][]) {
   stroke(255);
   dfd2d.reset();
   for (int i=0; i<in.length; i++) {
-    dfd2d.Draw(in[i][0],out[i][0],width/2,height/2,width,height/2);
+    dfd2d.Draw(in[i][0],out[i][0]*100,width/2,height/2,width,0);
   }
   
   
   stroke(128);
   dfd2d.reset();
   for (int i=0; i<in.length; i++) {
-    dfd2d.Draw(in[i][0],pred[i][0],width/2,height/2,width,height/2);
+    dfd2d.Draw(in[i][0],pred[i][0]*100,width/2,height/2,width,0);
   }
 }
 void drawX(float in[][],float out[][],float pred[][]) {
