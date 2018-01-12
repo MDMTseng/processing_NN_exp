@@ -1,6 +1,6 @@
 class NeuralTest{
 
-s_neuron_net nn = new s_neuron_net(new int[]{2,10,10,10,10,2});
+s_neuron_net nn = new s_neuron_net(new int[]{2,13,3,13,3,13,2});
 
   
 
@@ -225,7 +225,7 @@ void X2(){
   
   //if(1.0*successCount/InX.length>0.80)
     scrollingCount+=scrollingSpeed;
-  SRateHist.Draw(sqrt(nn.hidden[1][3].ADss[5])*20,0,700,width,100);
+  SRateHist.Draw(sqrt(nn.hidden[1][2].ADss[2])*20,0,700,width,100);
   TrainCount+=25;
   //if((TrainCount/25)%10==0) nn.RandomDropOut(0.003);
 }
